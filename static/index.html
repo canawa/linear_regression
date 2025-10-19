@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Линейная регрессия онлайн</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #6c757d;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .upload-section {
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 6px;
+            padding: 40px 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+            text-align: center;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+
+        .upload-area.dragover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #495057;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .upload-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .upload-btn:hover {
+            background: #0056b3;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .upload-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .plot-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .plot-container h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .excel-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .plot-btn {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            text-decoration: none;
+            color: white;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .info-section h3 {
+            color: #2c3e50;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 8px;
+        }
+
+        .info-section p {
+            color: #495057;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .info-section ul {
+            color: #495057;
+            line-height: 1.6;
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .info-section li {
+            margin-bottom: 5px;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 15px 0;
+        }
+
+        .highlight strong {
+            color: #856404;
+        }
+
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Linear Regression Analysis</div>
+            <div class="subtitle">Анализ данных методом линейной регрессии</div>
+        </div>
+        
+        <div class="info-section">
+            <h3>О линейной регрессии</h3>
+            <p>Линейная регрессия — это статистический метод, используемый для моделирования линейной зависимости между зависимой переменной (целевая переменная) и одной или несколькими независимыми переменными (признаки).</p>
+            
+            <p><strong>Принцип работы:</strong></p>
+            <ul>
+                <li>Алгоритм находит наилучшую прямую линию, которая минимизирует сумму квадратов ошибок между предсказанными и реальными значениями</li>
+                <li>Используется метод наименьших квадратов для нахождения оптимальных коэффициентов</li>
+                <li>Качество модели оценивается с помощью среднеквадратичной ошибки (MSE)</li>
+            </ul>
+            
+            <div class="highlight">
+                <strong>Важно:</strong> Ваш CSV файл должен содержать колонку с именем <code>target</code>, которая будет использоваться как целевая переменная. Все остальные колонки будут рассматриваться как признаки для модели.
+            </div>
+            
+            <p><strong>Требования к данным:</strong></p>
+            <ul>
+                <li>Файл в формате CSV</li>
+                <li>Наличие колонки <code>target</code> с числовыми значениями</li>
+                <li>Остальные колонки должны содержать числовые признаки</li>
+                <li>Отсутствие пропущенных значений (NaN)</li>
+            </ul>
+        </div>
+        
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-text">Перетащите CSV файл сюда</div>
+                <div class="upload-hint">или нажмите для выбора файла</div>
+            </div>
+
+        <input type="file" id="fileInput" accept=".csv" />
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <button class="upload-btn" id="uploadBtn" disabled>
+            Загрузить файл
+        </button>
+
+        <div class="result" id="result"></div>
+        
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="plot-container">
+                <h3>Результаты анализа линейной регрессии</h3>
+                <img id="plotImage" src="" alt="График линейной регрессии" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            </div>
+            
+            <div class="download-buttons">
+                <a href="/download/excel" class="download-btn excel-btn" id="excelBtn" style="display: none;">
+                    Скачать Excel файл с результатами
+                </a>
+                <a href="/download/plot" class="download-btn plot-btn" id="plotBtn" style="display: none;">
+                    Скачать график
+                </a>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>Возможности системы</h3>
+            <ul>
+                <li><strong>Автоматический анализ:</strong> Загрузите CSV файл и получите готовые результаты линейной регрессии</li>
+                <li><strong>Визуализация:</strong> График показывает качество модели и соответствие предсказаний реальным данным</li>
+                <li><strong>Экспорт результатов:</strong> Скачайте детальные результаты в Excel и график в PNG формате</li>
+                <li><strong>Стандартизация данных:</strong> Автоматическая нормализация признаков для улучшения качества модели</li>
+                <li><strong>Разделение на выборки:</strong> Автоматическое разделение данных на обучающую и тестовую выборки</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const result = document.getElementById('result');
+        const resultsSection = document.getElementById('resultsSection');
+        const plotImage = document.getElementById('plotImage');
+        const excelBtn = document.getElementById('excelBtn');
+        const plotBtn = document.getElementById('plotBtn');
+
+        let selectedFile = null;
+
+        // Обработка клика по области загрузки
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Обработка drag & drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // Обработка выбора файла
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Проверяем тип файла
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showResult('Пожалуйста, выберите CSV файл', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            uploadBtn.disabled = false;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Обработка загрузки
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            // Показываем прогресс
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loading"></span>Загружается...';
+            progressBar.style.display = 'block';
+            result.style.display = 'none';
+
+            // Симуляция прогресса
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 200);
+
+            try {
+                const response = await fetch('http://localhost:8000/upload_csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('Файл успешно загружен! Выполняется анализ...', 'success');
+                    
+                    // Ждем немного перед анализом
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    const getResponse = await fetch('http://localhost:8000/linear_regression');
+                    const result = await getResponse.json();
+                    
+                    if (getResponse.ok) {
+                        showResult('Анализ завершен успешно!', 'success');
+                        
+                        // Показываем секцию с результатами
+                        resultsSection.style.display = 'block';
+                        
+                        // Загружаем и отображаем график
+                        plotImage.src = 'http://localhost:8000/plot?' + new Date().getTime(); // Добавляем timestamp для обновления
+                        
+                        // Показываем кнопки скачивания
+                        excelBtn.style.display = 'inline-block';
+                        plotBtn.style.display = 'inline-block';
+                        
+                        // Скрываем текстовый результат
+                        setTimeout(() => {
+                            result.style.display = 'none';
+                        }, 2000);
+                        
+                    } else {
+                        showResult('Ошибка при анализе: ' + result.error, 'error');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Ошибка загрузки файла');
+                }
+            } catch (error) {
+                clearInterval(progressInterval);
+                showResult('Ошибка при загрузке файла: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'Загрузить файл';
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 1000);
+            }
+        });
+
+        function showResult(message, type) {
+            result.textContent = message;
+            result.className = 'result ' + type;
+            result.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
